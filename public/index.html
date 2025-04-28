@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evidencija pozajmica</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Evidencija pozajmica</h1>
+
+    <section id="add-transaction">
+      <h2>Dodaj Transakciju</h2>
+      <form id="transaction-form">
+        <select id="type">
+          <option value="income">Pozajmio</option>
+          <option value="expense">Pozajmica</option>
+        </select>
+        <input type="number" id="amount" placeholder="Količina" required />
+        <input type="text" id="description" placeholder="Opis" required />
+        <button type="submit">Dodaj</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Evidencija pozajmica</h2>
+
+      <div id="transaction-list"></div>
+
+      <!-- Pagination Controls -->
+      <div id="pagination-controls">
+        <button id="prev-page">Prethodna</button>
+        <span id="page-number">Strana 1</span>
+        <button id="next-page">Sledeća</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Mesečni izveštaj</h2>
+
+      <div class="monthly-summary-controls">
+        <label for="month">Mesec:</label>
+        <input type="number" id="month" min="1" max="12" value="4" />
+
+        <label for="year">Godina:</label>
+        <input type="number" id="year" value="2025" />
+
+        <button id="load-summary">Prikaži izveštaj</button>
+        <button id="download-pdf">Preuzmi izveštaj</button>
+      </div>
+
+      <div id="summary-info">
+        <span id="income"></span>
+        <span id="expense"></span>
+      </div>
+
+      <ul id="monthly-transactions"></ul>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
+</html>
