@@ -1,6 +1,6 @@
 import Transaction from "../models/Transaction.js";
 import dayjs from "dayjs";
-import PDFDocument from "pdfkit";
+import puppeteer from "puppeteer";
 
 //Add a new transaction
 export const addTransaction = async (req, res) => {
@@ -86,33 +86,43 @@ export const downloadMonthlySummaryPDF = async (req, res) => {
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Create PDF
-    const doc = new PDFDocument();
+    const htmlContent = `
+    <html>
+      <body>
+        <h1 style="text-align:center;">Izvestaj - ${month}/${year}</h1>
+        <p><strong>Ukupno Pozajmio:</strong> €${income}</p>
+        <p><strong>Ukupno Uzajmio:</strong> €${expense}</p>
+        <h2>Transakcije:</h2>
+        <ul>
+          ${transactions
+            .map(
+              (t) =>
+                `<li>${t.type === "income" ? "Pozajmio" : "Pozajmica"}: €${
+                  t.amount
+                } - ${t.description} (${dayjs(t.date).format(
+                  "YYYY-MM-DD"
+                )})</li>`
+            )
+            .join("")}
+        </ul>
+      </body>
+    </html>
+  `;
+
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({ format: "A4" });
+
+    await browser.close();
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=summary-${month}-${year}.pdf`
+      `attachment; filename=izvestaj-${month}-${year}.pdf`
     );
-    doc.pipe(res);
-
-    doc
-      .fontSize(20)
-      .text(`Monthly Summary - ${month}/${year}`, { align: "center" });
-    doc.moveDown();
-    doc.fontSize(16).text(`Total Income: $${income}`);
-    doc.fontSize(16).text(`Total Expense: $${expense}`);
-    doc.moveDown();
-
-    doc.fontSize(14).text("Transactions:", { underline: true });
-    transactions.forEach((t) => {
-      doc.text(
-        `${t.type.toUpperCase()}: $${t.amount} - ${t.description} (${dayjs(
-          t.date
-        ).format("YYYY-MM-DD")})`
-      );
-    });
-
-    doc.end();
+    res.send(pdfBuffer);
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
