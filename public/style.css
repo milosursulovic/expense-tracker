@@ -77,6 +77,20 @@ form button:hover {
   align-items: center;
 }
 
+.delete-btn {
+  background-color: transparent;
+  color: red;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  color: darkred;
+}
+
 /* Pagination Controls */
 #pagination-controls {
   margin-top: 20px;

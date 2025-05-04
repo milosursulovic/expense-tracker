@@ -117,6 +117,14 @@ async function fetchTransactions(page) {
       li.textContent = `${typeLabel}: ${t.amount}${currencyLabel} - ${
         t.description
       } (${new Date(t.date).toLocaleDateString("sr-RS")})`;
+
+      // Dugme za brisanje
+      const deleteBtn = document.createElement("button");
+      deleteBtn.classList.add("delete-btn");
+      deleteBtn.textContent = "×";
+      deleteBtn.addEventListener("click", () => deleteTransaction(t._id));
+      li.appendChild(deleteBtn);
+
       transactionList.appendChild(li);
     });
 
@@ -204,10 +212,35 @@ async function fetchMonthlySummary(year, month) {
       li.textContent = `${typeLabel}: ${t.amount}${currencyLabel} - ${
         t.description
       } (${new Date(t.date).toLocaleDateString("sr-RS")})`;
+
+      // Dugme za brisanje
+      const deleteBtn = document.createElement("button");
+      deleteBtn.classList.add("delete-btn");
+      deleteBtn.textContent = "×";
+      deleteBtn.addEventListener("click", () => deleteTransaction(t._id));
+      li.appendChild(deleteBtn);
+
       monthlyTransactions.appendChild(li);
     });
   } catch (err) {
     console.error("Error fetching summary:", err);
+  }
+}
+
+async function deleteTransaction(id) {
+  if (!confirm("Da li ste sigurni da želite da obrišete ovu transakciju?"))
+    return;
+
+  try {
+    await fetch(`/api/transactions/${id}`, {
+      method: "DELETE",
+    });
+
+    // Ponovno učitavanje podataka
+    fetchTransactions(currentPage);
+    fetchMonthlySummary(yearInput.value, monthInput.value);
+  } catch (err) {
+    console.error("Greška pri brisanju transakcije:", err);
   }
 }
 

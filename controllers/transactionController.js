@@ -174,3 +174,21 @@ export const downloadMonthlySummaryPDF = async (req, res) => {
     res.status(500).json({ msg: error.message });
   }
 };
+
+// ============================
+// Delete a transaction by ID
+// ============================
+export const deleteTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Transaction.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ msg: "Transakcija nije pronađena." });
+    }
+
+    res.status(200).json({ msg: "Transakcija uspešno obrisana." });
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
