@@ -3,6 +3,8 @@ const form = document.getElementById("transaction-form");
 const typeInput = document.getElementById("type");
 const amountInput = document.getElementById("amount");
 const descriptionInput = document.getElementById("description");
+const dateInput = document.getElementById("date");
+const currencyInput = document.getElementById("currency");
 const transactionList = document.getElementById("transaction-list");
 const monthInput = document.getElementById("month");
 const yearInput = document.getElementById("year");
@@ -25,6 +27,8 @@ form.addEventListener("submit", async (e) => {
     type: typeInput.value,
     amount: parseFloat(amountInput.value),
     description: descriptionInput.value,
+    date: dateInput.value,
+    currency: currencyInput.value,
   };
 
   try {
@@ -56,11 +60,16 @@ async function fetchTransactions(page) {
     data.transactions.forEach((t) => {
       const li = document.createElement("li");
       li.classList.add(t.type); // Add income or expense class
-      li.textContent = `${
-        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica"
-      }: ${t.amount} EUR - ${t.description} (${new Date(
-        t.date
-      ).toLocaleDateString()})`;
+
+      const typeLabel =
+        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica";
+      const currencyLabel =
+        t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : "";
+
+      li.textContent = `${typeLabel}: ${t.amount}${currencyLabel} - ${
+        t.description
+      } (${new Date(t.date).toLocaleDateString("sr-RS")})`;
+
       transactionList.appendChild(li);
     });
 
@@ -117,24 +126,39 @@ loadSummaryBtn.addEventListener("click", () => {
   fetchMonthlySummary(year, month);
 });
 
+// Helper function to format the summary by currency
+const formatSummary = (summaryObj) => {
+  return Object.entries(summaryObj)
+    .map(([currency, amount]) => {
+      const label = currency === "thing" ? "Stvar(i)" : currency.toUpperCase();
+      return `${amount} ${label}`;
+    })
+    .join(", ");
+};
+
 // Fetch and display monthly summary
 async function fetchMonthlySummary(year, month) {
   try {
     const res = await fetch(`/api/transactions/summary/${month}/${year}`);
     const data = await res.json();
 
-    incomeSpan.textContent = `Pozajmio: ${data.income} EUR`;
-    expenseSpan.textContent = `Pozajmica: ${data.expense} EUR`;
+    // Format and display total income and expense by currency
+    incomeSpan.textContent = `Pozajmio: ${formatSummary(data.income)}`;
+    expenseSpan.textContent = `Pozajmica: ${formatSummary(data.expense)}`;
 
     monthlyTransactions.innerHTML = "";
     data.transactions.forEach((t) => {
       const li = document.createElement("li");
       li.classList.add(t.type);
-      li.textContent = `${
-        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica"
-      }: ${t.amount} EUR - ${t.description} (${new Date(
-        t.date
-      ).toLocaleDateString()})`;
+
+      const typeLabel =
+        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica";
+      const currencyLabel =
+        t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : "";
+
+      li.textContent = `${typeLabel}: ${t.amount}${currencyLabel} - ${
+        t.description
+      } (${new Date(t.date).toLocaleDateString("sr-RS")})`;
 
       monthlyTransactions.appendChild(li);
     });

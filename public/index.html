@@ -16,8 +16,16 @@
           <option value="income">Pozajmio</option>
           <option value="expense">Pozajmica</option>
         </select>
+
+        <select id="currency" required>
+          <option value="rsd">RSD</option>
+          <option value="eur">EUR</option>
+          <option value="thing">Stvar</option>
+        </select>
+
         <input type="number" id="amount" placeholder="Količina" required />
         <input type="text" id="description" placeholder="Opis" required />
+        <input type="date" id="date" placeholder="Datum" required />
         <button type="submit">Dodaj</button>
       </form>
     </section>

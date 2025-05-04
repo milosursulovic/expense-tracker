@@ -40,27 +40,33 @@ export const getTransactions = async (req, res) => {
   }
 };
 
-//Get monthly summary
+// Get monthly summary
 export const getMonthlySummary = async (req, res) => {
   const { month, year } = req.params;
+
   try {
     const start = dayjs(`${year}-${month}-01`).startOf("month");
     const end = dayjs(start).endOf("month");
 
     const transactions = await Transaction.find({
-      date: {
-        $gte: start.toDate(),
-        $lt: end.toDate(),
-      },
+      date: { $gte: start.toDate(), $lt: end.toDate() },
     }).sort({ date: -1 }); // Sort by date in descending order
-    const income = transactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + t.amount, 0);
 
-    const expense = transactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + t.amount, 0);
+    // Helper function to group transactions by currency
+    const groupByCurrency = (type) => {
+      return transactions
+        .filter((t) => t.type === type)
+        .reduce((acc, t) => {
+          acc[t.currency] = (acc[t.currency] || 0) + t.amount;
+          return acc;
+        }, {});
+    };
 
+    // Group income and expense by currency
+    const income = groupByCurrency("income");
+    const expense = groupByCurrency("expense");
+
+    // Send the grouped data back to the frontend
     res.json({ income, expense, transactions });
   } catch (error) {
     res.status(500).json({ msg: error.message });
@@ -78,36 +84,56 @@ export const downloadMonthlySummaryPDF = async (req, res) => {
       date: { $gte: start.toDate(), $lt: end.toDate() },
     }).sort({ date: -1 }); // Sort by date in descending order
 
-    const income = transactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + t.amount, 0);
+    // Group income and expense by currency
+    const incomeByCurrency = {};
+    const expenseByCurrency = {};
 
-    const expense = transactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + t.amount, 0);
+    transactions.forEach((t) => {
+      if (t.type === "income") {
+        incomeByCurrency[t.currency] =
+          (incomeByCurrency[t.currency] || 0) + t.amount;
+      } else if (t.type === "expense") {
+        expenseByCurrency[t.currency] =
+          (expenseByCurrency[t.currency] || 0) + t.amount;
+      }
+    });
+
+    // Helper function to format the summary by currency
+    const formatSummary = (summaryObj) => {
+      return Object.entries(summaryObj)
+        .map(([currency, amount]) => {
+          const label =
+            currency === "thing" ? "Stvar(i)" : currency.toUpperCase();
+          return `${amount} ${label}`;
+        })
+        .join(", ");
+    };
+
+    const income = formatSummary(incomeByCurrency);
+    const expense = formatSummary(expenseByCurrency);
 
     const htmlContent = `
-    <html>
-      <body>
-        <h1 style="text-align:center;">Izvestaj - ${month}/${year}</h1>
-        <p><strong>Ukupno Pozajmio:</strong> €${income}</p>
-        <p><strong>Ukupno Uzajmio:</strong> €${expense}</p>
-        <h2>Transakcije:</h2>
-        <ul>
-          ${transactions
-            .map(
-              (t) =>
-                `<li>${t.type === "income" ? "Pozajmio" : "Pozajmica"}: €${
-                  t.amount
-                } - ${t.description} (${dayjs(t.date).format(
-                  "YYYY-MM-DD"
-                )})</li>`
-            )
-            .join("")}
-        </ul>
-      </body>
-    </html>
-  `;
+      <html>
+        <body>
+          <h1 style="text-align:center;">Izveštaj - ${month}/${year}</h1>
+          <p><strong>Ukupno Pozajmio:</strong> ${income}</p>
+          <p><strong>Ukupno Pozajmica:</strong> ${expense}</p>
+          <h2>Transakcije:</h2>
+          <ul>
+            ${transactions
+              .map((t) => {
+                const label = t.type === "income" ? "Pozajmio" : "Pozajmica";
+                const currency =
+                  t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : "";
+                return `<li>${label}: ${t.amount}${currency} - ${
+                  t.description
+                } (${dayjs(t.date).format("YYYY-MM-DD")})</li>`;
+              })
+              .join("")}
+          </ul>
+        </body>
+      </html>
+    `;
 
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
