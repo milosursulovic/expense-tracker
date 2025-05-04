@@ -37,21 +37,23 @@
       <h2>Pretraži i/ili sortiraj</h2>
 
       <form>
-        <input type="text" id="search-field" placeholder="Pretraži" />
-
-        <label for="sortBy">Filtriraj po:</label>
-        <select id="sortBy">
-          <option value="transactiontype">Tip transakcije</option>
-          <option value="currency">Valuta</option>
-          <option value="amount">Količina</option>
-          <option value="description">Opis</option>
+        <input
+          type="text"
+          id="search"
+          placeholder="Pretraga..."
+          onchange="fetchTransactions()"
+        />
+        <label for="sortBy">Sortiraj po:</label>
+        <select id="sortBy" onchange="fetchTransactions()">
+          <option value="type">Tip</option>
+          <option value="amount">Iznos</option>
           <option value="date">Datum</option>
+          <option value="currency">Valuta</option>
         </select>
-
         <label for="sortOrder">Redosled:</label>
-        <select id="sortOrder">
+        <select id="sortOrder" onchange="fetchTransactions()">
           <option value="asc">Rastuće</option>
-          <option value="desc">Opadajuće</option>
+          <option value="desc" selected>Opadajuće</option>
         </select>
       </form>
     </section>

@@ -1,197 +1,227 @@
-// Get elements from the DOM
-const form = document.getElementById("transaction-form"); // The form element for submitting transactions
-const typeInput = document.getElementById("type"); // Input for the type of transaction (income or expense)
-const amountInput = document.getElementById("amount"); // Input for the amount of the transaction
-const descriptionInput = document.getElementById("description"); // Input for the description of the transaction
-const dateInput = document.getElementById("date"); // Input for the transaction date
-const currencyInput = document.getElementById("currency"); // Input for the currency of the transaction
-const transactionList = document.getElementById("transaction-list"); // The list element where transactions will be displayed
-const monthInput = document.getElementById("month"); // Input for the month to view the summary
-const yearInput = document.getElementById("year"); // Input for the year to view the summary
-const loadSummaryBtn = document.getElementById("load-summary"); // Button to load the monthly summary
-const incomeSpan = document.getElementById("income"); // Span element for displaying total income
-const expenseSpan = document.getElementById("expense"); // Span element for displaying total expenses
-const monthlyTransactions = document.getElementById("monthly-transactions"); // The list element for displaying monthly transactions
-const downloadPdfBtn = document.getElementById("download-pdf"); // Button to download the monthly summary as a PDF
+// ==== DOM ELEMENTS ====
 
-// Set the default date input to today's date (ISO format)
+// Transaction form and its input fields
+const form = document.getElementById("transaction-form");
+const typeInput = document.getElementById("type");
+const amountInput = document.getElementById("amount");
+const descriptionInput = document.getElementById("description");
+const dateInput = document.getElementById("date");
+const currencyInput = document.getElementById("currency");
+
+// Transaction display elements
+const transactionList = document.getElementById("transaction-list");
+const monthlyTransactions = document.getElementById("monthly-transactions");
+
+// Monthly summary UI
+const monthInput = document.getElementById("month");
+const yearInput = document.getElementById("year");
+const loadSummaryBtn = document.getElementById("load-summary");
+const incomeSpan = document.getElementById("income");
+const expenseSpan = document.getElementById("expense");
+const downloadPdfBtn = document.getElementById("download-pdf");
+
+// Search and sorting inputs
+const searchInput = document.getElementById("search");
+const sortByInput = document.getElementById("sortBy");
+const sortOrderInput = document.getElementById("sortOrder");
+
+// ==== URL PARAMETERS ====
+
+// Extract query parameters (search, sort)
+const searchParams = new URLSearchParams(window.location.search);
+const searchValue = searchParams.get("search") || "";
+const sortByValue = searchParams.get("sortBy") || "date";
+const sortOrderValue = searchParams.get("sortOrder") || "asc";
+
+// Populate form inputs with URL values
+searchInput.value = searchValue;
+sortByInput.value = sortByValue;
+sortOrderInput.value = sortOrderValue;
+
+// Set default date to today
 dateInput.value = new Date().toISOString().split("T")[0];
 
-// Read the current page and limit values from the URL, default to 1 and 10 if not present
+// Pagination setup
 const urlParams = new URLSearchParams(window.location.search);
 let currentPage = parseInt(urlParams.get("page")) || 1;
 const limit = parseInt(urlParams.get("limit")) || 10;
 
-// Handle form submission to add a new transaction
+// ==== FORM SUBMISSION HANDLER ====
+
+// Submits a new transaction to the server
 form.addEventListener("submit", async (e) => {
-  e.preventDefault(); // Prevent form from submitting normally
+  e.preventDefault();
 
   const transaction = {
-    type: typeInput.value, // Get the type of the transaction
-    amount: parseFloat(amountInput.value), // Parse the amount to a float
-    description: descriptionInput.value, // Get the description
-    date: dateInput.value, // Get the date
-    currency: currencyInput.value, // Get the currency
+    type: typeInput.value,
+    amount: parseFloat(amountInput.value),
+    description: descriptionInput.value,
+    date: dateInput.value,
+    currency: currencyInput.value,
   };
 
   try {
-    // Send the transaction data to the server to be added
-    const res = await fetch("/api/transactions", {
+    await fetch("/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(transaction),
     });
 
-    // Clear the form fields after the transaction is added
+    // Clear fields and reload data
     amountInput.value = "";
     descriptionInput.value = "";
-
-    // Reload transactions to reflect the newly added transaction
     fetchTransactions(currentPage);
   } catch (err) {
     console.error("Error adding transaction:", err);
   }
 });
 
-// Fetch and display transactions with pagination
+// ==== FETCHING & DISPLAYING TRANSACTIONS ====
+
+// Fetch and render transactions based on current page, search, and sort
 async function fetchTransactions(page) {
+  const search = searchInput.value;
+  const srtBy = sortByInput.value;
+  const srtOrder = sortOrderInput.value;
+
   try {
-    // Fetch transactions for the current page and limit
-    const res = await fetch(`/api/transactions?page=${page}&limit=${limit}`);
+    const res = await fetch(
+      `/api/transactions?page=${page}&limit=${limit}&search=${search}&sortBy=${srtBy}&sortOrder=${srtOrder}`
+    );
     const data = await res.json();
 
-    // Clear the current transaction list
-    transactionList.innerHTML = "";
+    // Update URL parameters
+    const params = new URLSearchParams({
+      page: data.currentPage,
+      limit,
+      search: data.searchQuery,
+      sortBy: data.sortBy,
+      sortOrder: data.sortOrder,
+    });
+    history.replaceState(null, "", `/?${params.toString()}`);
 
-    // Loop through the transactions and display them
+    // Render transactions
+    transactionList.innerHTML = "";
     data.transactions.forEach((t) => {
       const li = document.createElement("li");
-      li.classList.add(t.type); // Add a class based on the transaction type (income or expense)
+      li.classList.add(t.type);
 
       const typeLabel =
-        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica"; // Label based on transaction type
+        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica";
       const currencyLabel =
-        t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : ""; // Add currency symbol if it's not "thing"
+        t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : "";
 
       li.textContent = `${typeLabel}: ${t.amount}${currencyLabel} - ${
         t.description
-      } (${new Date(t.date).toLocaleDateString("sr-RS")})`; // Display the transaction details
-
-      transactionList.appendChild(li); // Append the transaction to the list
+      } (${new Date(t.date).toLocaleDateString("sr-RS")})`;
+      transactionList.appendChild(li);
     });
 
-    // Update pagination controls
+    // Update pagination and summary
     updatePaginationControls(data.currentPage, data.totalPages);
-
-    // Fetch and display the monthly summary
     fetchMonthlySummary(yearInput.value, monthInput.value);
   } catch (err) {
     console.error("Error fetching transactions:", err);
   }
 }
 
-// Update pagination controls based on the current page and total pages
+// ==== PAGINATION HANDLERS ====
+
+// Update "Previous" and "Next" buttons
 function updatePaginationControls(currentPage, totalPages) {
   const prevBtn = document.getElementById("prev-page");
   const nextBtn = document.getElementById("next-page");
   const pageNumber = document.getElementById("page-number");
 
-  pageNumber.textContent = `Strana ${currentPage}`; // Display the current page number
-
-  // Disable the Previous button if we're on the first page
+  pageNumber.textContent = `Strana ${currentPage} od ${totalPages}`;
   prevBtn.disabled = currentPage === 1;
-
-  // Disable the Next button if we're on the last page
   nextBtn.disabled = currentPage === totalPages;
 }
 
-// Update the URL parameters for pagination
+// Update URL with new pagination values
 function updateUrlParams(page, limit) {
   const url = new URL(window.location);
-  url.searchParams.set("page", page); // Set the page parameter
-  url.searchParams.set("limit", limit); // Set the limit parameter
-  window.history.pushState({}, "", url); // Update the URL without reloading the page
+  url.searchParams.set("page", page);
+  url.searchParams.set("limit", limit);
+  window.history.pushState({}, "", url);
 }
 
-// Handle Previous page and Next page button clicks
+// Navigate to previous page
 document.getElementById("prev-page").addEventListener("click", () => {
   if (currentPage > 1) {
-    currentPage--; // Decrease the current page number
-    updateUrlParams(currentPage, limit); // Update the URL parameters
-    fetchTransactions(currentPage); // Fetch transactions for the new page
+    currentPage--;
+    updateUrlParams(currentPage, limit);
+    fetchTransactions(currentPage);
   }
 });
 
+// Navigate to next page
 document.getElementById("next-page").addEventListener("click", () => {
-  currentPage++; // Increase the current page number
-  updateUrlParams(currentPage, limit); // Update the URL parameters
-  fetchTransactions(currentPage); // Fetch transactions for the new page
+  currentPage++;
+  updateUrlParams(currentPage, limit);
+  fetchTransactions(currentPage);
 });
 
-// Load the monthly summary when the user clicks the "Load Summary" button
+// ==== SUMMARY FUNCTIONS ====
+
+// Load summary when "Load Summary" is clicked
 loadSummaryBtn.addEventListener("click", () => {
-  const month = monthInput.value; // Get the selected month
-  const year = yearInput.value; // Get the selected year
-  fetchMonthlySummary(year, month); // Fetch and display the monthly summary
+  fetchMonthlySummary(yearInput.value, monthInput.value);
 });
 
-// Helper function to format the summary by currency
+// Helper: Format income/expense summary for display
 const formatSummary = (summaryObj) => {
   return Object.entries(summaryObj)
     .map(([currency, amount]) => {
-      const label = currency === "thing" ? "Stvar(i)" : currency.toUpperCase(); // Adjust label for "thing"
-      return `${amount} ${label}`; // Return the formatted summary string
+      const label = currency === "thing" ? "Stvar(i)" : currency.toUpperCase();
+      return `${amount} ${label}`;
     })
-    .join(", "); // Join multiple entries with commas
+    .join(", ");
 };
 
-// Fetch and display the monthly summary for a specific month and year
+// Fetch and display monthly summary and transactions
 async function fetchMonthlySummary(year, month) {
   try {
-    // Fetch the summary data from the server
     const res = await fetch(`/api/transactions/summary/${month}/${year}`);
     const data = await res.json();
 
-    // Format and display total income and expense by currency
     incomeSpan.textContent = `Pozajmio: ${formatSummary(data.income)}`;
     expenseSpan.textContent = `Pozajmica: ${formatSummary(data.expense)}`;
 
-    // Display the transactions for the month
     monthlyTransactions.innerHTML = "";
     data.transactions.forEach((t) => {
       const li = document.createElement("li");
-      li.classList.add(t.type); // Add class based on the transaction type
+      li.classList.add(t.type);
 
       const typeLabel =
-        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica"; // Label based on transaction type
+        t.type.toUpperCase() === "INCOME" ? "Pozajmio" : "Pozajmica";
       const currencyLabel =
-        t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : ""; // Add currency symbol if needed
+        t.currency !== "thing" ? ` ${t.currency.toUpperCase()}` : "";
 
       li.textContent = `${typeLabel}: ${t.amount}${currencyLabel} - ${
         t.description
-      } (${new Date(t.date).toLocaleDateString("sr-RS")})`; // Display transaction details
-
-      monthlyTransactions.appendChild(li); // Append the transaction to the list
+      } (${new Date(t.date).toLocaleDateString("sr-RS")})`;
+      monthlyTransactions.appendChild(li);
     });
   } catch (err) {
     console.error("Error fetching summary:", err);
   }
 }
 
-// Download the monthly summary as a PDF when the user clicks the download button
+// Download monthly summary as PDF
 downloadPdfBtn.addEventListener("click", () => {
-  const month = monthInput.value; // Get the selected month
-  const year = yearInput.value; // Get the selected year
-  window.open(`/api/transactions/summary/${month}/${year}/pdf`, "_blank"); // Open the PDF in a new tab
+  const month = monthInput.value;
+  const year = yearInput.value;
+  window.open(`/api/transactions/summary/${month}/${year}/pdf`, "_blank");
 });
 
-// Load the initial transactions and monthly summary on page load
-fetchTransactions(currentPage);
+// ==== INITIAL PAGE LOAD ====
 
-// Set the default month and year to the current month and year
+// Set default month and year
 const today = new Date();
-monthInput.value = today.getMonth() + 1; // JS months are 0-based, so add 1
-yearInput.value = today.getFullYear(); // Set the year to the current year
+monthInput.value = today.getMonth() + 1; // JavaScript months are 0-based
+yearInput.value = today.getFullYear();
 
-// Fetch and display the monthly summary for the current month and year
+// Load initial data
+fetchTransactions(currentPage);
 fetchMonthlySummary(yearInput.value, monthInput.value);
