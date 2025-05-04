@@ -14,6 +14,8 @@ const expenseSpan = document.getElementById("expense");
 const monthlyTransactions = document.getElementById("monthly-transactions");
 const downloadPdfBtn = document.getElementById("download-pdf");
 
+dateInput.value = new Date().toISOString().split("T")[0];
+
 // Read page and limit from URL if present
 const urlParams = new URLSearchParams(window.location.search);
 let currentPage = parseInt(urlParams.get("page")) || 1;
