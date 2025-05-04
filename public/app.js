@@ -90,9 +90,12 @@ async function fetchTransactions(page) {
     );
     const data = await res.json();
 
+    // Allow page reset when sort by or sort order changes
+    let newPage = page === undefined ? 1 : page;
+
     // Update URL parameters
     const params = new URLSearchParams({
-      page: data.currentPage,
+      page: newPage,
       limit,
       search: data.searchQuery,
       sortBy: data.sortBy,
