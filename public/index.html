@@ -12,11 +12,13 @@
     <section id="add-transaction">
       <h2>Dodaj Transakciju</h2>
       <form id="transaction-form">
+        <label for="type">Tip transakcije:</label>
         <select id="type">
           <option value="income">Pozajmio</option>
           <option value="expense">Pozajmica</option>
         </select>
 
+        <label for="currency">Valuta:</label>
         <select id="currency" required>
           <option value="rsd">RSD</option>
           <option value="eur">EUR</option>
@@ -25,6 +27,7 @@
 
         <input type="number" id="amount" placeholder="Količina" required />
         <input type="text" id="description" placeholder="Opis" required />
+        <label for="date">Datum:</label>
         <input type="date" id="date" placeholder="Datum" required />
         <button type="submit">Dodaj</button>
       </form>
