@@ -33,6 +33,11 @@ form {
   justify-content: center;
 }
 
+form label {
+  align-self: center;
+  font-weight: 500;
+}
+
 form select,
 form input {
   padding: 10px;

@@ -30,6 +30,29 @@
       </form>
     </section>
 
+    <section id="search-transactions">
+      <h2>Pretraži i/ili sortiraj</h2>
+
+      <form>
+        <input type="text" id="search-field" placeholder="Pretraži" />
+
+        <label for="sortBy">Filtriraj po:</label>
+        <select id="sortBy">
+          <option value="transactiontype">Tip transakcije</option>
+          <option value="currency">Valuta</option>
+          <option value="amount">Količina</option>
+          <option value="description">Opis</option>
+          <option value="date">Datum</option>
+        </select>
+
+        <label for="sortOrder">Redosled:</label>
+        <select id="sortOrder">
+          <option value="asc">Rastuće</option>
+          <option value="desc">Opadajuće</option>
+        </select>
+      </form>
+    </section>
+
     <section>
       <h2>Evidencija pozajmica</h2>
 
