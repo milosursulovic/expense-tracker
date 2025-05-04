@@ -227,20 +227,23 @@ async function fetchMonthlySummary(year, month) {
   }
 }
 
+// Function to delete a transaction by its ID
 async function deleteTransaction(id) {
-  if (!confirm("Da li ste sigurni da želite da obrišete ovu transakciju?"))
-    return;
+  // Confirm with the user before proceeding with the deletion
+  if (!confirm("Are you sure you want to delete this transaction?")) return; // Exit the function if the user cancels
 
   try {
+    // Send a DELETE request to the API endpoint for deleting the transaction
     await fetch(`/api/transactions/${id}`, {
-      method: "DELETE",
+      method: "DELETE", // Specify the HTTP method as DELETE
     });
 
-    // Ponovno učitavanje podataka
-    fetchTransactions(currentPage);
-    fetchMonthlySummary(yearInput.value, monthInput.value);
+    // Reload the transaction data and the monthly summary after the transaction is deleted
+    fetchTransactions(currentPage); // Fetch transactions for the current page
+    fetchMonthlySummary(yearInput.value, monthInput.value); // Fetch the monthly summary for the selected month and year
   } catch (err) {
-    console.error("Greška pri brisanju transakcije:", err);
+    // Log any errors that occur during the fetch operation
+    console.error("Error while deleting transaction:", err);
   }
 }
 
